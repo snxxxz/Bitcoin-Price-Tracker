@@ -4,28 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bitcoin Price Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400&display=swap" rel="stylesheet">
     <style>
-        /* General Styles */
+        /* General Styles - Reduced Complexity */
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Fira Code', monospace;
             margin: 0;
             overflow: hidden;
-            background: linear-gradient(to bottom, #121212, #1e1e1e);
-            color: #fff;
+            background: #111; /* Simplified background */
+            color: #d4d4d4;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="%23ffcc66" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z"/></svg>') 12 12, auto;
+            cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="%2364ffda" xmlns="http://www.w3.org/2000/svg"><path d="M10 4H12V10H10V4ZM10 14H12V20H10V14Z" /></svg>') 12 12, auto;
         }
 
-        /* Theming */
+        /* Theming - Simplified */
         :root {
-            --primary-color: #ffcc66;
-            --secondary-color: #ffffff;
-            --background-color: rgba(30, 30, 30, 0.95);
-            --shadow-color: rgba(0, 0, 0, 0.8);
+            --primary-color: #64ffda;
+            --secondary-color: #ccd6f6;
+            --background-color: rgba(30, 30, 30, 0.9);
+            --shadow-color: rgba(0, 0, 0, 0.5);
         }
 
         #container {
@@ -35,7 +37,7 @@
             padding: 50px;
             border-radius: 25px;
             box-shadow: 0 15px 40px var(--shadow-color);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease; /* Faster transition */
         }
 
         #container:hover {
@@ -44,7 +46,7 @@
         }
 
         h1 {
-            font-size: 2.7em;
+            font-size: 2.5em;
             text-align: center;
             margin-bottom: 40px;
             color: var(--secondary-color);
@@ -56,8 +58,7 @@
             text-align: center;
             margin-bottom: 50px;
             color: var(--primary-color);
-            text-shadow: 0 4px 10px var(--shadow-color);
-            transition: color 0.3s ease;
+            transition: color 0.2s ease; /* Faster transition */
         }
 
         #price:hover {
@@ -66,62 +67,41 @@
 
         #chartContainer {
             position: relative;
-            height: 550px;
-            border: 3px solid rgba(255, 255, 255, 0.08);
+            height: 500px;
+            border: 3px solid rgba(255, 255, 255, 0.05);
             border-radius: 18px;
             overflow: hidden;
         }
 
-        /* Particle Styles */
-        #particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 204, 102, 0.4);
-            animation: float 6s infinite linear;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
-            25% { opacity: 1; }
-            75% { opacity: 1; }
-            100% { transform: translateY(-120vh) translateX(25vw) rotate(360deg); opacity: 0; }
-        }
+        /* Particles - Completely Removed */
 
         /* Notification Styles */
         #notification {
             position: fixed;
-            top: 20px;
+            top: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #fff;
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            color: var(--secondary-color);
             padding: 15px 30px;
-            border-radius: 8px;
+            border-radius: 10px;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
+            font-size: 1em;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
         #notification.show {
             opacity: 1;
             visibility: visible;
         }
+
     </style>
 </head>
 <body>
-
-    <div id="particles"></div>
 
     <div id="container">
         <h1>Bitcoin (BTC) Price</h1>
@@ -131,43 +111,21 @@
         </div>
     </div>
 
-    <div id="notification">Page will update soon...</div>
+    <div id="notification">Updating Live...</div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const priceElement = document.getElementById('price');
         const chartCanvas = document.getElementById('bitcoinChart').getContext('2d');
         let bitcoinChart;
-        const particlesContainer = document.getElementById('particles');
         const notification = document.getElementById('notification');
+        let historicalDataCache = null; // Cache for historical data
 
         // Show Notification
         notification.classList.add('show');
         setTimeout(() => {
             notification.classList.remove('show');
-        }, 3000); // Hide after 3 seconds
-
-        function createParticle() {
-            const particle = document.createElement('div');
-            particle.classList.add('particle');
-            const size = Math.random() * 25 + 5;
-            particle.style.width = `${size}px`;
-            particle.style.height = `${size}px`;
-            particle.style.left = `${Math.random() * 100}vw`;
-            particle.style.top = '100vh';
-            particle.style.animationDuration = `${Math.random() * 7 + 5}s`;
-            particlesContainer.appendChild(particle);
-
-            particle.addEventListener('animationend', () => {
-                particle.remove();
-            });
-        }
-
-        // Create particles on mouse move
-        document.addEventListener('mousemove', (event) => {
-            for (let i = 0; i < 3; i++) {
-                createParticle();
-            }
-        });
+        }, 3000);
 
         async function fetchBitcoinData() {
             try {
@@ -176,17 +134,14 @@
                 const priceData = await priceResponse.json();
                 const currentPrice = priceData.bitcoin.usd;
                 priceElement.textContent = `$${currentPrice.toLocaleString()}`;
-                priceElement.style.transition = 'opacity 0.5s ease';
-                priceElement.style.opacity = 0;
-                setTimeout(() => {
-                    priceElement.style.opacity = 1;
-                }, 500);
 
+                // Fetch historical data - Use cache if available
+                if (!historicalDataCache) {
+                    const historicalResponse = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30');
+                    historicalDataCache = await historicalResponse.json();
+                }
 
-                // Fetch historical data for the last 30 days from CoinGecko API
-                const historicalResponse = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30');
-                const historicalData = await historicalResponse.json();
-                const prices = historicalData.prices;
+                const prices = historicalDataCache.prices;
 
                 const labels = prices.map(price => {
                     const date = new Date(price[0]);
@@ -195,7 +150,7 @@
 
                 const data = prices.map(price => price[1]);
 
-                // Chart configuration
+                // Chart configuration - Simplified
                 const chartConfig = {
                     type: 'line',
                     data: {
@@ -203,43 +158,45 @@
                         datasets: [{
                             label: 'Bitcoin Price (USD)',
                             data: data,
-                            borderColor: 'rgba(255, 204, 102, 0.9)',
-                            backgroundColor: 'rgba(255, 204, 102, 0.25)',
-                            borderWidth: 4,
+                            borderColor: 'rgba(100, 255, 218, 0.7)', /* Less opaque */
+                            backgroundColor: 'rgba(100, 255, 218, 0.1)', /* Very faint */
+                            borderWidth: 2,
                             pointRadius: 0,
-                            tension: 0.4,
+                            tension: 0.2,
                             fill: true
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: false,
                         scales: {
                             x: {
                                 ticks: {
-                                    color: '#eee'
+                                    color: '#ccc',
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: 10
                                 },
                                 grid: {
-                                    color: 'rgba(255,255,255,0.07)'
+                                    color: 'rgba(255,255,255,0.03)'
                                 }
                             },
                             y: {
                                 ticks: {
-                                    color: '#eee',
+                                    color: '#ccc',
                                     callback: function(value, index, values) {
                                         return '$' + value.toLocaleString();
                                     }
                                 },
                                 grid: {
-                                    color: 'rgba(255,255,255,0.07)'
+                                    color: 'rgba(255,255,255,0.03)'
                                 }
                             }
                         },
                         plugins: {
                             legend: {
-                                labels: {
-                                    color: '#eee'
-                                }
+                                display: false
                             }
                         }
                     }
@@ -251,16 +208,18 @@
                 }
                 bitcoinChart = new Chart(chartCanvas, chartConfig);
 
-
             } catch (error) {
                 console.error('Error fetching Bitcoin data:', error);
-                priceElement.textContent = 'API Has OVERFLOWN! 😕 | Please Wait or Refresh Page.';
+                priceElement.textContent = 'Error loading data.';
             }
         }
 
         // Fetch data initially and then every 60 seconds
         fetchBitcoinData();
-        setInterval(fetchBitcoinData, 60000);
+        setInterval(() => {
+            historicalDataCache = null; // Clear the cache
+            fetchBitcoinData();
+        }, 60000);
     </script>
 </body>
 </html>
